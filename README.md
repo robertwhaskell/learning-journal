@@ -1,2 +1,2 @@
 # learning-journal
-Journal Webpage for Codefellows
+Journal for Codefellows
