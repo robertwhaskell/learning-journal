@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyramid.events import NewRequest, subscriber
 import psycopg2
 import os
 import logging
@@ -44,6 +45,13 @@ def init_db():
     with closing(connect_db(settings)) as db:
         db.cursor().execute(DB_SCHEMA)
         db.commit()
+
+
+@subscriber(NewRequest)
+def open_connection(event):
+    request = event.request
+    settings = request.registry.settings
+    request.db = connect_db(settings)
 
 
 def main():
