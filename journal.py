@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS entries (
     created TIMESTAMP NOT NULL
 )
 """
+DB_ENTRIES_LIST = """
+SELECT id, title, text, created FROM entries ORDER BY created DESC
+"""
+INSERT_ENTRY = "INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);"
 
 # add this just below the SQL table definition we just created
 logging.basicConfig()
@@ -75,9 +79,17 @@ def write_entry(request):
     title = request.params['title']
     text = request.params['text']
     created = date.today()
-    stmnt = "INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);"
-    request.db.cursor().execute(stmnt, (title, text, created))
+    request.db.cursor().execute(INSERT_ENTRY, (title, text, created))
     return {}
+
+
+def read_entries(request):
+    """return a list of all entries as dicts"""
+    cursor = request.db.cursor()
+    cursor.execute(DB_ENTRIES_LIST)
+    keys = ('id', 'title', 'text', 'created')
+    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    return {'entries': entries}
 
 
 def main():
