@@ -3,6 +3,7 @@ from pyramid.events import NewRequest, subscriber
 import psycopg2
 import os
 import logging
+from datetime import date
 from pyramid.config import Configurator
 from pyramid.session import SignedCookieSessionFactory
 from pyramid.view import view_config
@@ -68,6 +69,15 @@ def close_connection(request):
         else:
             db.commit()
         request.db.close()
+
+
+def write_entry(request):
+    title = request.params['title']
+    text = request.params['text']
+    created = date.today()
+    stmnt = "INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);"
+    request.db.cursor().execute(stmnt, (title, text, created))
+    return {}
 
 
 def main():
