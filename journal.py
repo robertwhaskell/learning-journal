@@ -28,11 +28,6 @@ logging.basicConfig()
 log = logging.getLogger(__file__)
 
 
-@view_config(route_name='home', renderer='string')
-def home(request):
-    return "Hello World"
-
-
 def connect_db(settings):
     """Return a connection to the configured database"""
     return psycopg2.connect(settings['db'])
@@ -83,6 +78,7 @@ def write_entry(request):
     return {}
 
 
+@view_config(route_name='home', renderer='templates/list.jinja2')
 def read_entries(request):
     """return a list of all entries as dicts"""
     cursor = request.db.cursor()
