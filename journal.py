@@ -47,7 +47,7 @@ def init_db():
     """
     settings = {}
     settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
+        'DATABASE_URL', 'dbname=learning_journal user=efrain-petercamacho'
     )
     with closing(connect_db(settings)) as db:
         db.cursor().execute(DB_SCHEMA)
@@ -143,6 +143,30 @@ def logout(request):
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
 
+@view_config(route_name='details',renderer="templates/details.jinja2")
+def details(request):
+    DB_FILTER = """
+    SELECT id, title, text, created FROM entries WHERE id=1
+    """
+    cursor = request.db.cursor()
+    cursor.execute(DB_FILTER)
+    keys = ('id', 'title', 'text', 'created')
+    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    return {'entries': entries}
+
+@view_config(route_name='editer',renderer="templates/editer.jinja2")
+def editer(request):
+    DB_FILTER = """
+    SELECT id, title, text, created FROM entries WHERE id=1
+    """
+    cursor = request.db.cursor()
+    cursor.execute(DB_FILTER)
+    keys = ('id', 'title', 'text', 'created')
+    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    print str(entries) 
+    return {'entries': entries}
+
+# created="2015-02-07 20:39:44.634992"
 
 def main():
     """Create a configured wsgi app"""
@@ -150,7 +174,7 @@ def main():
     settings['reload_all'] = os.environ.get('DEBUG', True)
     settings['debug_all'] = os.environ.get('DEBUG', True)
     settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
+        'DATABASE_URL', 'dbname=learning_journal user=efrain-petercamacho'
         )
     settings['auth.username'] = os.environ.get('AUTH_USERNAME', 'admin')
     manager = BCRYPTPasswordManager()
@@ -178,6 +202,8 @@ def main():
     config.add_route('add', '/add')
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
+    config.add_route('details', '/details')
+    config.add_route('editer', '/editer')
     config.scan()
     app = config.make_wsgi_app()
     return app

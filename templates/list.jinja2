@@ -20,6 +20,7 @@
   <h2>Entries</h2>
   {% for entry in entries %}
   <article class="entry" id="entry={{entry.id}}">
+    <a href="{{ request.route_url('editer') }}"><button>Test Button</button></a>
     <h3>{{ entry.title }}</h3>
     <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
     <div class="entry_body">
