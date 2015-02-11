@@ -56,29 +56,39 @@ def app():
     world.app = TestApp(app)
 
 
+def run_query(db, query, params=(), get_results=True):
+    cursor = db.cursor()
+    cursor.execute(query, params)
+    db.commit()
+    results = None
+    if get_results:
+        results = cursor.fetchall()
+    return results
+
+
 @before.all
-def req_context():
-    """mock a request with a database attached"""
+def entry():
+    """provide a single entry in the database"""
     settings = world.settings
-    req = testing.DummyRequest()
+    now = datetime.datetime.utcnow()
+    expected = ('Test Title', 'Test Text', now)
     with closing(connect_db(settings)) as db:
-        req.db = db
-        req.exception = None
-        yield req
-        # after a test has run, we clear out entries for isolation
-        clear_entries(settings)
+        run_query(db, INSERT_ENTRY, expected, False)
+        db.commit()
+    world.expected = expected
 
 
 @after.all
-def cleanup():
+def cleanup(step):
     clear_db(world.settings)
 
 
 @step('an entry with the title "(.*)"')
 def get_entry(step, title):
     # get entry date, text, title, assign it to world
-
-    assert True
+    response = world.app.get('/')
+    print response.body
+    assert 'Test Title' in response.body
     pass
 
 
