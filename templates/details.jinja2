@@ -1,11 +1,14 @@
 {% extends "base.jinja2" %}
 {% block body %}
-  <h2>Entries</h2>
-  {% for entry in entries %}
-  <article class="entry" id="entry={{entry.id}}">
+    <h2>Details</h2>
+    {% for entry in entries %}
+    <article class="entry" id="entry={{entry.id}}">
     <h3>{{ entry.title }}</h3>
-    <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
-    <div class="entry_body">
-      {{ entry.text|safe }}
+        <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
+        {{ entry.text|safe }}
+        <p>
+        {% if request.authenticated_userid %}
+        <a href="{{ request.route_url('editer', id = entry.id)}}"><button>Edit</button></a>
+        {% endif %}
     {% endfor %}
 {% endblock %}
