@@ -49,7 +49,7 @@ def init_db():
     """
     settings = {}
     settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=efrain-petercamacho'
+        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
     )
     with closing(connect_db(settings)) as db:
         db.cursor().execute(DB_SCHEMA)
@@ -199,7 +199,7 @@ def main():
     settings['reload_all'] = os.environ.get('DEBUG', True)
     settings['debug_all'] = os.environ.get('DEBUG', True)
     settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=efrain-petercamacho'
+        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
         )
     settings['auth.username'] = os.environ.get('AUTH_USERNAME', 'admin')
     manager = BCRYPTPasswordManager()
@@ -237,5 +237,5 @@ def main():
 
 if __name__ == '__main__':
     app = main()
-    port = os.environ.get('PORT', 5000)
+    port = os.environ.get('PORT', 5001)
     serve(app, host='0.0.0.0', port=port)

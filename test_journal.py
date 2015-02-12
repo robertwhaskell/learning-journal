@@ -11,7 +11,7 @@ from journal import DB_SCHEMA
 from cryptacular.bcrypt import BCRYPTPasswordManager
 
 
-TEST_DSN = 'dbname=test_learning_journal user=efrain-petercamacho'
+TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
 
 
 def init_db(settings):
