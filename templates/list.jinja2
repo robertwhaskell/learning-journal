@@ -23,7 +23,7 @@
     <h3>{{ entry.title }}</h3>
     <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
     <div class="entry_body">
-      {{ entry.text|safe }}
+      {{ entry.text|markdown|safe }}
     </div>
     <a href="{{ request.route_url('details', id = entry.id)}}"><button>Detail View</button></a>
   </article>

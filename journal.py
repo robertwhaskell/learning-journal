@@ -15,6 +15,7 @@ from pyramid.authorization import ACLAuthorizationPolicy
 from cryptacular.bcrypt import BCRYPTPasswordManager
 from pyramid.security import remember, forget
 import markdown
+import jinja2
 here = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -88,13 +89,9 @@ def write_entry(request):
 
 def update(request,identification):
     title = request.params['title']
-    print title
     text = request.params['text']
-    print text
-    print identification
     UPDATE_ENTRY = "UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;"
     created = date.today()
-    print created
     request.db.cursor().execute(UPDATE_ENTRY, (title, text, created, identification))
     return {}
 
@@ -175,8 +172,6 @@ def editer(request):
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    for entry in entries:
-        entry['text'] = markdown.markdown(entry['text'], extensions=['codehilite'])
     return {'entries': entries}
 
 @view_config(route_name='details',renderer="templates/details.jinja2")
@@ -221,6 +216,7 @@ def main():
         authorization_policy=ACLAuthorizationPolicy(),
 
     )
+    jinja2.filters.FILTERS['markdown'] = markd
     config.include('pyramid_jinja2')
     config.add_static_view('static', os.path.join(here, 'static'))
     config.add_route('home', '/')
@@ -234,6 +230,9 @@ def main():
     app = config.make_wsgi_app()
     return app
 
+
+def markd(input):
+    return markdown.markdown(input, extension=['CodeHilite'])
 
 if __name__ == '__main__':
     app = main()
