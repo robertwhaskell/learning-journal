@@ -87,21 +87,15 @@ def cleanup(step):
 def get_entry(step, title):
     # get entry date, text, title, assign it to world
     response = world.app.get('/')
-    print response.body
     assert 'Test Title' in response.body
-    pass
 
 
 @step('I press the detail button')
 def press_button(step):
     # press the detail button associated with the entry held in world
-    assert True
-    pass
+    world.response = world.app.get('/details/1')
 
 
 @step('I see the detail page for that entry')
 def see_detail(step):
-    # check that the details being displayed on the page are the
-    # same as what the world is holding.
-    assert True
-    pass
+    assert 'Test Title' in world.response
