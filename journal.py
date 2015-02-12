@@ -14,6 +14,7 @@ from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from cryptacular.bcrypt import BCRYPTPasswordManager
 from pyramid.security import remember, forget
+import markdown
 here = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -108,7 +109,7 @@ def add_entry(request):
 
 @view_config(route_name='update', request_method='POST')
 def update_entry(request):
-    identification = request.matchdict['id']
+    identification = (request.matchdict.get('id',-1),)
     try:
         update(request, identification)
     except psycopg2.Error:
@@ -123,6 +124,8 @@ def read_entries(request):
     cursor.execute(DB_ENTRIES_LIST)
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    for entry in entries:
+        entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
     return {'entries': entries}
 
 
@@ -166,23 +169,26 @@ def logout(request):
 
 @view_config(route_name='editer',renderer="templates/editer.jinja2")
 def editer(request):
-    param = request.matchdict['id']
+    param = (request.matchdict.get('id',-1),)
     DB_FILTER = "SELECT id, title, text, created FROM entries WHERE id=%s"
     cursor = request.db.cursor()
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
+    for entry in entries:
+        entry['text'] = markdown.markdown(entry['text'], extensions=['codehilite'])
     return {'entries': entries}
 
 @view_config(route_name='details',renderer="templates/details.jinja2")
 def details(request):
-    param = request.matchdict['id']
+    param = (request.matchdict.get('id',-1),)
     DB_FILTER = "SELECT id, title, text, created FROM entries WHERE id=%s"
     cursor = request.db.cursor()
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
     entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    print str(entries) 
+    for entry in entries:
+        entry['text'] = markdown.markdown(entry['text'], extensions=['codehilite']) 
     return {'entries': entries}
 
 # created="2015-02-07 20:39:44.634992"
