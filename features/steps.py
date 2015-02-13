@@ -77,6 +77,17 @@ def entry():
         db.commit()
     world.expected = expected
 
+@before.all
+def entry_2():
+    """provide a single entry in the database"""
+    settings = world.settings
+    now = datetime.datetime.utcnow()
+    expected = ('Markdown Test', '### Header3', now)
+    with closing(connect_db(settings)) as db:
+        run_query(db, INSERT_ENTRY, expected, False)
+        db.commit()
+    world.expected = expected
+
 
 @after.all
 def cleanup(step):
@@ -87,7 +98,7 @@ def cleanup(step):
 def get_entry(step, title):
     # get entry date, text, title, assign it to world
     response = world.app.get('/')
-    assert 'Test Title' in response.body
+    assert title in response.body
 
 
 @step('I press the detail button')
@@ -98,4 +109,44 @@ def press_button(step):
 
 @step('I see the detail page for that entry')
 def see_detail(step):
-    assert 'Test Title' in world.response
+    assert 'Test Title' in world.response.body
+
+# Markdown steps
+
+@step('an entry with title "(.*)"')
+def get_entry(step, title):
+    response = world.app.get('/')
+    assert title in response.body
+
+
+@step('I see the entry on the index page')
+def check_entry(step):
+    pass
+
+
+@step('I see that it is a markdown entry')
+def see_changes(step):
+    assert '<h3>Header3</h3>' in world.app.get('/').body
+
+
+# edit steps
+
+@step('an entry with title "(.*)"')
+def get_entry(step, title):
+    response = world.app.get('/')
+    assert title in response.body
+
+
+@step('When I press the edit button')
+def press_edit_button(step):
+    entry_data = {
+        'title': 'Edited Title Text',
+        'text': 'Edited Post',
+    }
+    world.app.post('/update/1', params=entry_data, status='3*')
+    pass
+
+
+@step('I see the changes I made to the entry')
+def see_changes(step):
+    assert "Edited Title Text" in world.app.get('/details/1').body

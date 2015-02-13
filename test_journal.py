@@ -175,5 +175,3 @@ def test_post_to_add_view(app):
 
 
 INPUT_BTN = '<input type="submit" value="Share" name="Share"/>'
-
-
