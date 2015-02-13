@@ -88,6 +88,22 @@ def entry_2():
         db.commit()
     world.expected = expected
 
+@before.all
+def entry_3():
+    """provide a single entry in the database"""
+    settings = world.settings
+    now = datetime.datetime.utcnow()
+    mkdn = """
+    ```python
+        def thing():
+        pass ```
+    """
+    expected = ('Color Testing', mkdn, now)
+    with closing(connect_db(settings)) as db:
+        run_query(db, INSERT_ENTRY, expected, False)
+        db.commit()
+    world.expected = expected
+
 
 @after.all
 def cleanup(step):
@@ -113,12 +129,6 @@ def see_detail(step):
 
 # Markdown steps
 
-@step('an entry with title "(.*)"')
-def get_entry(step, title):
-    response = world.app.get('/')
-    assert title in response.body
-
-
 @step('I see the entry on the index page')
 def check_entry(step):
     pass
@@ -129,14 +139,6 @@ def see_changes(step):
     assert '<h3>Header3</h3>' in world.app.get('/').body
 
 
-# edit steps
-
-@step('an entry with title "(.*)"')
-def get_entry(step, title):
-    response = world.app.get('/')
-    assert title in response.body
-
-
 @step('When I press the edit button')
 def press_edit_button(step):
     entry_data = {
@@ -144,9 +146,50 @@ def press_edit_button(step):
         'text': 'Edited Post',
     }
     world.app.post('/update/1', params=entry_data, status='3*')
-    pass
 
 
 @step('I see the changes I made to the entry')
 def see_changes(step):
     assert "Edited Title Text" in world.app.get('/details/1').body
+
+
+@step('I see the entry is colorized')
+def see_changes(step):
+    print world.app.get('/').body
+    assert '<div class="codehilite"><pre>```python' in world.app.get('/')
+
+
+@step('a detail page')
+def go_to_detail(step):
+    world.response = world.app.get('/details/1')
+
+
+@step("I'm not logged in")
+def check_login(step):
+    pass
+
+
+@step("I don't see an edit button")
+def check_for_button(step):
+    assert '<button>Edit</button>' not in world.response
+
+
+@step("a login page")
+def login_page(step):
+    entry_data = {
+        'username': 'admin',
+        'password': 'secret',
+    }
+    world.app.post('/login', params=entry_data, status='3*')
+
+
+@step("I log in and go to an editing page")
+def goto_edit(step):
+    pass
+
+
+@step("I see the edit button")
+def see_edit_button(step):
+    print world.app.get('/details/1')
+    assert '<button>Edit</button>' in world.app.get('/details/1')
+    world.app.post('/logout')
