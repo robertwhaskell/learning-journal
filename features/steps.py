@@ -9,6 +9,7 @@ from lettuce import world
 from lettuce import step
 from lettuce import before
 from lettuce import after
+import markdown
 
 TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
 
@@ -91,93 +92,13 @@ def entry(title, text):
     world.expected = expected
 
 
-# Steps
-# Shared steps:
-@step('an entry with the title "(.*)"')
-def get_entry(step, title):
-    # get entry date, text, title, assign it to world
-    response = world.app.get('/')
-    assert title in response.body
+# Steps:
 
-
-# Detail Feature
-@step('I press the detail button')
-def press_button(step):
-    # press the detail button associated with the entry held in world
-    world.response = world.app.get('/details/1')
-
-
-@step('I see the detail page for that entry')
-def see_detail(step):
-    print world.response
-    assert 'Test Title' in world.response.body
-
-
-# Markdown Feature
-@step('I see the entry on the index page')
-def check_entry(step):
-    pass
-
+@step('I see an entry on the "(.*)" page with the title "(.*)"')
+def confirm_title_on_homepage(step, page, title):
+    world.page = page
+    assert title in world.app.get(page)
 
 @step('I see that it is a markdown entry')
-def see_markdown(step):
-    assert '<h3>Header3</h3>' in world.app.get('/').body
-
-
-# Edit Feature
-@step('When I press the edit button')
-def press_edit_button(step):
-    entry_data = {
-        'title': 'Edited Title Text',
-        'text': 'Edited Post',
-    }
-    world.app.post('/update/2', params=entry_data, status='3*')
-
-
-@step('I see the changes I made to the entry')
-def see_changes(step):
-    assert "Edited Title Text" in world.app.get('/details/2').body
-
-
-# colorized Feature
-@step('I see the entry is colorized')
-def see_colorized(step):
-    assert '<div class="codehilite"><pre>```python' in world.app.get('/')
-
-
-@step('a detail page')
-def go_to_detail(step):
-    world.response = world.app.get('/details/1')
-
-
-# Logged-in Feature
-@step("I'm not logged in")
-def check_login(step):
-    pass
-
-
-@step("I don't see an edit button")
-def check_for_button(step):
-    assert '<button>Edit</button>' not in world.response
-
-
-# Logged-Out Feature
-@step("a login page")
-def login_page(step):
-    entry_data = {
-        'username': 'admin',
-        'password': 'secret',
-    }
-    world.app.post('/login', params=entry_data, status='3*')
-
-
-@step("I log in and go to an editing page")
-def goto_edit(step):
-    pass
-
-
-@step("I see the edit button")
-def see_edit_button(step):
-    print world.app.get('/details/1')
-    assert '<button>Edit</button>' in world.app.get('/details/1')
-    world.app.post('/logout')
+def confirm_markdown(step):
+    assert markdown.markdown('Test Text', extensions=('codehilite', 'fenced_code')) in world.app.get(world.page)

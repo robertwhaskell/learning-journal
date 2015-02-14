@@ -1,7 +1,11 @@
-Feature: Markdown entries
-    Entries should display as markdown objects.
+Feature: Markdown/Colorization Features
 
-    Scenario: Entry is markdown
-        Given an entry with the title "Markdown Test"
-        When I see the entry on the index page
+
+    Scenario Outline: Entries should display on the home page as markdown objects.
+        When I see an entry on the "<pagename>" page with the title "<title>"
         Then I see that it is a markdown entry
+
+    Examples:
+        | pagename   | title      |
+        | /          | Test Title |
+        | /details/1 | Test Title |
