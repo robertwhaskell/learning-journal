@@ -181,25 +181,19 @@ def get_entry(request):
     cursor = request.db.cursor()
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
-    return [dict(zip(keys, row)) for row in cursor.fetchall()]
+    return [dict(zip(keys, cursor.fetchone()))]
 
 
 @view_config(route_name='editor', renderer="templates/editor.jinja2")
 def editor(request):
-    entry = get_entry(request)
-    return {'entries': entry}
+    return {'entries': get_entry(request)}
 
 
 @view_config(route_name='details', renderer="templates/details.jinja2")
 def details(request):
-    param = (request.matchdict.get('id', -1),)
-    cursor = request.db.cursor()
-    cursor.execute(DB_FILTER, param)
-    keys = ('id', 'title', 'text', 'created')
-    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    for entry in entries:
-        entry['text'] = markdown.markdown(entry['text'], extensions=['codehilite']) 
-    return {'entries': entries}
+    entry = get_entry(request)
+    entry[0]['text'] = markdown.markdown(entry[0]['text'], extensions=['codehilite']) 
+    return {'entries': entry}
 
 
 def main():
