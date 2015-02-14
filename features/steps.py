@@ -15,10 +15,49 @@ from lettuce import after
 TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
 
 
-# Before we do anything, we want to build a db, and stock it
-# lorem ipsum entries.
+@before.all
+def db():
+    """set up a database"""
+    settings = {'db': TEST_DSN}
+    init_db(settings)
+    world.settings = settings
 
-# After everything runs, we want to tear the database down
+
+@before.all
+def app():
+    """cofigure an app, then set up a fake server"""
+    from journal import main
+    from webtest import TestApp
+    os.environ['DATABASE_URL'] = TEST_DSN
+    app = main()
+    world.app = TestApp(app)
+
+
+@before.each_feature
+def enter_data(step):
+    """populate the database"""
+    entry('Test Title', 'Test Text')
+    entry('Uneditted Title', 'Unedited Text')
+    entry('Markdown Test', '### Header3')
+    mkdn = """
+    ```python
+        def thing():
+        pass ```
+    """
+    entry('Color Testing', mkdn)
+
+
+@after.all
+def clear_entries(settings):
+    """clear the database"""
+    with closing(connect_db(world.settings)) as db:
+        db.cursor().execute("DELETE FROM entries")
+        db.commit()
+
+
+@after.all
+def cleanup(step):
+    clear_db(world.settings)
 
 
 def init_db(settings):
@@ -33,29 +72,6 @@ def clear_db(settings):
         db.commit()
 
 
-def clear_entries(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute("DELETE FROM entries")
-        db.commit()
-
-
-@before.all
-def db():
-    """set up a database"""
-    settings = {'db': TEST_DSN}
-    init_db(settings)
-    world.settings = settings
-
-
-@before.all
-def app():
-    from journal import main
-    from webtest import TestApp
-    os.environ['DATABASE_URL'] = TEST_DSN
-    app = main()
-    world.app = TestApp(app)
-
-
 def run_query(db, query, params=(), get_results=True):
     cursor = db.cursor()
     cursor.execute(query, params)
@@ -66,50 +82,19 @@ def run_query(db, query, params=(), get_results=True):
     return results
 
 
-@before.all
-def entry():
+def entry(title, text):
     """provide a single entry in the database"""
     settings = world.settings
     now = datetime.datetime.utcnow()
-    expected = ('Test Title', 'Test Text', now)
-    with closing(connect_db(settings)) as db:
-        run_query(db, INSERT_ENTRY, expected, False)
-        db.commit()
-    world.expected = expected
-
-@before.all
-def entry_2():
-    """provide a single entry in the database"""
-    settings = world.settings
-    now = datetime.datetime.utcnow()
-    expected = ('Markdown Test', '### Header3', now)
-    with closing(connect_db(settings)) as db:
-        run_query(db, INSERT_ENTRY, expected, False)
-        db.commit()
-    world.expected = expected
-
-@before.all
-def entry_3():
-    """provide a single entry in the database"""
-    settings = world.settings
-    now = datetime.datetime.utcnow()
-    mkdn = """
-    ```python
-        def thing():
-        pass ```
-    """
-    expected = ('Color Testing', mkdn, now)
+    expected = (title, text, now)
     with closing(connect_db(settings)) as db:
         run_query(db, INSERT_ENTRY, expected, False)
         db.commit()
     world.expected = expected
 
 
-@after.all
-def cleanup(step):
-    clear_db(world.settings)
-
-
+# Steps
+# Shared steps:
 @step('an entry with the title "(.*)"')
 def get_entry(step, title):
     # get entry date, text, title, assign it to world
@@ -117,6 +102,7 @@ def get_entry(step, title):
     assert title in response.body
 
 
+# Detail Feature
 @step('I press the detail button')
 def press_button(step):
     # press the detail button associated with the entry held in world
@@ -125,37 +111,39 @@ def press_button(step):
 
 @step('I see the detail page for that entry')
 def see_detail(step):
+    print world.response
     assert 'Test Title' in world.response.body
 
-# Markdown steps
 
+# Markdown Feature
 @step('I see the entry on the index page')
 def check_entry(step):
     pass
 
 
 @step('I see that it is a markdown entry')
-def see_changes(step):
+def see_markdown(step):
     assert '<h3>Header3</h3>' in world.app.get('/').body
 
 
+# Edit Feature
 @step('When I press the edit button')
 def press_edit_button(step):
     entry_data = {
         'title': 'Edited Title Text',
         'text': 'Edited Post',
     }
-    world.app.post('/update/1', params=entry_data, status='3*')
+    world.app.post('/update/2', params=entry_data, status='3*')
 
 
 @step('I see the changes I made to the entry')
 def see_changes(step):
-    assert "Edited Title Text" in world.app.get('/details/1').body
+    assert "Edited Title Text" in world.app.get('/details/2').body
 
 
+# colorized Feature
 @step('I see the entry is colorized')
-def see_changes(step):
-    print world.app.get('/').body
+def see_colorized(step):
     assert '<div class="codehilite"><pre>```python' in world.app.get('/')
 
 
@@ -164,6 +152,7 @@ def go_to_detail(step):
     world.response = world.app.get('/details/1')
 
 
+# Logged-in Feature
 @step("I'm not logged in")
 def check_login(step):
     pass
@@ -174,6 +163,7 @@ def check_for_button(step):
     assert '<button>Edit</button>' not in world.response
 
 
+# Logged-Out Feature
 @step("a login page")
 def login_page(step):
     entry_data = {
