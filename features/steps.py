@@ -46,6 +46,11 @@ def enter_data(step):
     entry('Color Testing', mkdn)
 
 
+@before.outline
+def logout(*args):
+    world.app.get('/').click(linkid='logout')
+
+
 @after.all
 def clear_entries(settings):
     """clear the database"""
@@ -92,17 +97,24 @@ def entry(title, text):
     world.expected = expected
 
 
+def mkdn(text):
+    return markdown.markdown(text, extensions=('codehilite', 'fenced_code'))
+
+
 # Steps:
-
-@step('I see an entry on the "(.*)" page with the title "(.*)"')
-def confirm_title_on_homepage(step, page, title):
+@step('I see an entry on the "(.*)" page with the text "(.*)"')
+def confirm_title_on_homepage(step, page, text):
     world.page = page
-    assert title in world.app.get(page)
+    world.text = text
+    assert text in world.app.get(page)
 
 
-@step('I see that it is a markdown entry')
-def confirm_markdown(step):
-    assert markdown.markdown('Test Text', extensions=('codehilite', 'fenced_code')) in world.app.get(world.page)
+@step('I see that it "(.*)" a markdown entry')
+def confirm_markdown(step, is_or_isnt):
+    if is_or_isnt == 'is':
+        assert mkdn(world.text) in world.app.get(world.page)
+    else:
+        assert mkdn(world.text) not in world.app.get(world.page)
 
 
 @step('logged in')
@@ -153,3 +165,4 @@ def confirm_change(step):
     world.homepage = world.app.get('/')
     assert 'Edited Title' in world.homepage
     assert 'Edited Text' in world.homepage
+    logout()
