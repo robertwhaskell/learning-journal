@@ -37,16 +37,20 @@ def enter_data(step):
     """populate the database"""
     entry('Test Title', 'Test Text')
     entry('Unedited Title', 'Unedited Text')
-    entry('Markdown Test', '### Header3')
-    mkdn = """
-    ```python
-        def thing():
-        pass ```
-    """
-    entry('Color Testing', mkdn)
+    entry('Delete Title', 'Delete Text')
 
 
-@before.outline
+@before.each_feature
+def log_in(step):
+    world.homepage = world.app.get('/')
+    world.loginpage = world.homepage.click(linkid='login')
+    f = world.loginpage.form
+    f['username'] = 'admin'
+    f['password'] = 'secret'
+    f.submit('submit')
+
+
+@after.each_feature
 def logout(*args):
     world.app.get('/').click(linkid='logout')
 
@@ -117,16 +121,6 @@ def confirm_markdown(step, is_or_isnt):
         assert mkdn(world.text) not in world.app.get(world.page)
 
 
-@step('logged in')
-def log_in(step):
-    world.homepage = world.app.get('/')
-    world.loginpage = world.homepage.click(linkid='login')
-    f = world.loginpage.form
-    f['username'] = 'admin'
-    f['password'] = 'secret'
-    f.submit('submit')
-
-
 @step('Go to the home page')
 def Go_to_home_page(step):
     world.homepage = world.app.get('/')
@@ -165,4 +159,27 @@ def confirm_change(step):
     world.homepage = world.app.get('/')
     assert 'Edited Title' in world.homepage
     assert 'Edited Text' in world.homepage
-    logout()
+
+
+@step("Go to an entry's edit page")
+def goto_edit_page(step):
+    assert 'Delete Title' in world.app.get('/')
+    world.editpage = world.app.get('/editor/3')
+    assert 'Delete Title' in world.editpage
+    assert 'Delete Text' in world.editpage
+
+
+@step('Press the delete button')
+def press_delete(step):
+    world.homepage = world.editpage.click(linkid='delete')
+
+
+@step('Then I see that the entry is gone from the homepage')
+def check_homepage(step):
+    assert 'Delete Title' not in world.app.get('/')
+    assert 'Delete Text' not in world.app.get('/')
+
+
+@step('Then I see that the entry is gone from the database')
+def check_database(step):
+    pass
