@@ -186,9 +186,11 @@ def get_entry(request):
 @view_config(route_name='editor', renderer="templates/editor.jinja2")
 def editor(request):
     if request.authenticated_userid:
-        return {'entries': get_entry(request)}
+        entry = {'entries': get_entry(request)}
         if request.method == 'POST':
-            return HTTPFound(request.route_url('details'))
+            update(request, request.matchdict.get('id', -1))
+            return HTTPFound(request.route_url('home'))
+        return entry
     else:
         raise HTTPUnauthorized
 
