@@ -31,6 +31,10 @@ DB_ENTRIES_LIST = """
 SELECT id, title, text, created FROM entries ORDER BY created DESC
 """
 
+DB_FILTER = """
+SELECT id, title, text, created FROM entries WHERE id=%s
+"""
+
 INSERT_ENTRY = """
 INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);
 """
@@ -172,21 +176,23 @@ def logout(request):
     return HTTPFound(request.route_url('home'), headers=headers)
 
 
-@view_config(route_name='editor', renderer="templates/editor.jinja2")
-def editor(request):
+def get_entry(request):
     param = (request.matchdict.get('id', -1),)
-    DB_FILTER = "SELECT id, title, text, created FROM entries WHERE id=%s"
     cursor = request.db.cursor()
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
-    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    return {'entries': entries}
+    return [dict(zip(keys, row)) for row in cursor.fetchall()]
+
+
+@view_config(route_name='editor', renderer="templates/editor.jinja2")
+def editor(request):
+    entry = get_entry(request)
+    return {'entries': entry}
 
 
 @view_config(route_name='details', renderer="templates/details.jinja2")
 def details(request):
     param = (request.matchdict.get('id', -1),)
-    DB_FILTER = "SELECT id, title, text, created FROM entries WHERE id=%s"
     cursor = request.db.cursor()
     cursor.execute(DB_FILTER, param)
     keys = ('id', 'title', 'text', 'created')
