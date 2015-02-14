@@ -18,6 +18,9 @@ import markdown
 import jinja2
 here = os.path.dirname(os.path.abspath(__file__))
 
+UPDATE_ENTRY = """
+UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;
+"""
 
 DB_SCHEMA = """
 CREATE TABLE IF NOT EXISTS entries (
@@ -87,13 +90,14 @@ def write_entry(request):
     request.db.cursor().execute(INSERT_ENTRY, (title, text, created))
     return {}
 
-def update(request,identification):
+
+def update(request, identification):
     title = request.params['title']
     text = request.params['text']
-    UPDATE_ENTRY = "UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;"
     created = date.today()
     request.db.cursor().execute(UPDATE_ENTRY, (title, text, created, identification))
     return {}
+
 
 @view_config(route_name='add', request_method='POST')
 def add_entry(request):
@@ -164,8 +168,8 @@ def logout(request):
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
 
-@view_config(route_name='editer',renderer="templates/editer.jinja2")
-def editer(request):
+@view_config(route_name='editor',renderer="templates/editor.jinja2")
+def editor(request):
     param = (request.matchdict.get('id',-1),)
     DB_FILTER = "SELECT id, title, text, created FROM entries WHERE id=%s"
     cursor = request.db.cursor()
@@ -224,7 +228,7 @@ def main():
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
     config.add_route('details', '/details/{id}')
-    config.add_route('editer', '/editer/{id}')
+    config.add_route('editor', '/editor/{id}')
     config.add_route('update', '/update/{id}')
     config.scan()
     app = config.make_wsgi_app()

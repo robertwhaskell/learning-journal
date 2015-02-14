@@ -8,7 +8,7 @@
         {{ entry.text|safe }}
         <p>
         {% if request.authenticated_userid %}
-        <a href="{{ request.route_url('editer', id = entry.id)}}"><button>Edit</button></a>
+        <a href="{{ request.route_url('editor', id = entry.id)}}"><button>Edit</button></a>
         {% endif %}
     {% endfor %}
 {% endblock %}

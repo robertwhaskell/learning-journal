@@ -1,0 +1,25 @@
+{% extends "base.jinja2" %}
+{% block body %}
+  <h2>Editor</h2>
+    {% for entry in entries %}
+
+        <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
+
+
+
+        <form action="{{ request.route_url('update', id = entry.id) }}" method="POST" class="add_entry">
+            <div class="field">
+                <label for="title">Title</label>
+                    <input type="text" size="30" name="title" id="title" value={{entry.title}}>
+            </div>
+            <div class="field">
+                <label for="text">Text</label>
+                    <textarea name="text" id="text" rows="5" cols="80">{{ entry.text|safe}}</textarea>
+            </div>
+            <div class="control_row">
+                <input type="submit" value="Share" name="Share"/>
+            </div>
+        </form>       
+    {{ entry.text|safe }}
+    {% endfor %}
+{% endblock %}
