@@ -166,7 +166,6 @@ def login(request):
         if authenticated:
             headers = remember(request, username)
             return HTTPFound(request.route_url('home'), headers=headers)
-
     return {'error': error, 'username': username}
 
 
@@ -188,6 +187,8 @@ def get_entry(request):
 def editor(request):
     if request.authenticated_userid:
         return {'entries': get_entry(request)}
+        if request.method == 'POST':
+            return HTTPFound(request.route_url('details'))
     else:
         raise HTTPUnauthorized
 
