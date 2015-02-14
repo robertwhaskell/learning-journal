@@ -14,9 +14,9 @@
       <aside id="user-controls">
         <ul>
         {% if not request.authenticated_userid %}
-          <li><a href="{{ request.route_url('login') }}">log in</a></li>
+          <li><a href="{{ request.route_url('login') }}" id="login">log in</a></li>
         {% else %}
-          <li><a href="{{ request.route_url('logout') }}">log out</a></li>
+          <li><a href="{{ request.route_url('logout') }}" id="logout">log out</a></li>
         {% endif %}
       </ul>
     </aside>

@@ -25,7 +25,7 @@
     <div class="entry_body">
       {{ entry.text|markdown|safe }}
     </div>
-    <a href="{{ request.route_url('details', id = entry.id)}}"><button>Detail View</button></a>
+    <a href="{{ request.route_url('details', id = entry.id)}}" id="{{entry.id}}"><button>Detail View</button></a>
   </article>
   {% else %}
   <div class="entry">
