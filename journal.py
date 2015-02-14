@@ -3,7 +3,7 @@ from pyramid.events import NewRequest, subscriber
 import psycopg2
 import os
 import logging
-from datetime import date
+from datetime import datetime
 from pyramid.config import Configurator
 from pyramid.session import SignedCookieSessionFactory
 from pyramid.view import view_config
@@ -91,7 +91,7 @@ def write_entry(request):
     """write a single entry to the database"""
     title = request.params['title']
     text = request.params['text']
-    created = date.today()
+    created = datetime.today()
     request.db.cursor().execute(INSERT_ENTRY, (title, text, created))
     return {}
 
@@ -99,7 +99,7 @@ def write_entry(request):
 def update(request, identification):
     title = request.params['title']
     text = request.params['text']
-    created = date.today()
+    created = datetime.today()
     request.db.cursor().execute(UPDATE_ENTRY, (title, text, created, identification))
     return {}
 
