@@ -9,7 +9,7 @@ from pyramid.session import SignedCookieSessionFactory
 from pyramid.view import view_config
 from waitress import serve
 from contextlib import closing
-from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError
+from pyramid.httpexceptions import HTTPFound, HTTPInternalServerError, HTTPUnauthorized
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from cryptacular.bcrypt import BCRYPTPasswordManager
@@ -186,13 +186,16 @@ def get_entry(request):
 
 @view_config(route_name='editor', renderer="templates/editor.jinja2")
 def editor(request):
-    return {'entries': get_entry(request)}
+    if request.authenticated_userid:
+        return {'entries': get_entry(request)}
+    else:
+        raise HTTPUnauthorized
 
 
 @view_config(route_name='details', renderer="templates/details.jinja2")
 def details(request):
     entry = get_entry(request)
-    entry[0]['text'] = markdown.markdown(entry[0]['text'], extensions=['codehilite']) 
+    entry[0]['text'] = markdown.markdown(entry[0]['text'], extensions=('codehilite', 'fenced_code')) 
     return {'entries': entry}
 
 
