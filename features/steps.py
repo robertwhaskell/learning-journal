@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from contextlib import closing
-from pyramid import testing
 import datetime
 import os
 from journal import INSERT_ENTRY
 from journal import connect_db
 from journal import DB_SCHEMA
-from cryptacular.bcrypt import BCRYPTPasswordManager
 from lettuce import world
 from lettuce import step
 from lettuce import before
