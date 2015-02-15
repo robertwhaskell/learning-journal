@@ -171,7 +171,7 @@ def goto_edit_page(step):
 
 @step('Press the delete button')
 def press_delete(step):
-    world.homepage = world.editpage.click(linkid='delete')
+    world.homepage = world.editpage.click('Delete')
 
 
 @step('Then I see that the entry is gone from the homepage')
