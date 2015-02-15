@@ -2,11 +2,7 @@
 {% block body %}
   <h2>Editor</h2>
     {% for entry in entries %}
-
         <p class="dateline">{{ entry.created.strftime('%b. %d, %Y') }}
-
-
-
         <form action="" method="POST" class="add_entry">
             <div class="field">
                 <label for="title">Title</label>
@@ -20,5 +16,6 @@
                 <input type="submit" value="Share" name="Share"/>
             </div>     
         </form>
+        <a href="{{ request.route_url('delete', id = entry.id)}}"><button>Delete</button></a>
     {% endfor %}
 {% endblock %}

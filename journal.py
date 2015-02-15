@@ -43,6 +43,10 @@ UPDATE_ENTRY = """
 UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;
 """
 
+DELETE_ENTRY = """
+DELETE FROM entries WHERE id=%s;
+"""
+
 logging.basicConfig()
 log = logging.getLogger(__file__)
 
@@ -186,6 +190,8 @@ def editor(request):
 
 @view_config(route_name='delete')
 def delete(request):
+    param = request.matchdict.get('id', -1)
+    request.db.cursor().execute(DELETE_ENTRY, [param])
     return HTTPFound(request.route_url('home'))
 
 
