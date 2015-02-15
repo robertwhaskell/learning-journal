@@ -176,6 +176,7 @@ def get_entry(request):
 def editor(request):
     if request.authenticated_userid:
         entry = {'entries': get_entry(request)}
+        print request.method
         if request.method == 'POST':
             update(request, request.matchdict.get('id', -1))
             return HTTPFound(request.route_url('home'))

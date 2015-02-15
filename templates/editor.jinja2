@@ -15,8 +15,6 @@
             <div class="control_row">
                 <input type="submit" value="Share" name="Share"/>
             </div>
-        </form>
-        <a href="{{ request.route_url('editor', id = entry.id)}}"><button>Delete</button></a>
-    {{ entry.text|safe }}
+        </form>       
     {% endfor %}
 {% endblock %}
