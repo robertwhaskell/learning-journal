@@ -176,13 +176,17 @@ def get_entry(request):
 def editor(request):
     if request.authenticated_userid:
         entry = {'entries': get_entry(request)}
-        print request.method
         if request.method == 'POST':
             update(request, request.matchdict.get('id', -1))
             return HTTPFound(request.route_url('home'))
         return entry
     else:
         raise HTTPUnauthorized
+
+
+@view_config(route_name='delete')
+def delete(request):
+    return HTTPFound(request.route_url('home'))
 
 
 @view_config(route_name='details', renderer="templates/details.jinja2")
@@ -229,6 +233,7 @@ def main():
     config.add_route('logout', '/logout')
     config.add_route('details', '/details/{id}')
     config.add_route('editor', '/editor/{id}')
+    config.add_route('delete', '/delete/{id}')
     config.scan()
     app = config.make_wsgi_app()
     return app
