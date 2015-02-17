@@ -121,6 +121,7 @@ def add_entry(request):
 @view_config(route_name='home', renderer='templates/list.jinja2')
 def read_entries(request):
     """return a list of all entries as dicts"""
+    print datetime.today()
     cursor = request.db.cursor()
     cursor.execute(DB_ENTRIES_LIST)
     keys = ('id', 'title', 'text', 'created')

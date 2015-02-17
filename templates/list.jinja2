@@ -1,5 +1,13 @@
 {% extends "base.jinja2" %}
 {% block body %}
+<script>
+$(document).ready(function(){
+    $("button#butid").click(function(){
+      $.post("/add", {'title' : 'New Ajax Title', 'text' : 'Ajax text'});
+    });
+});
+</script>
+<button id="butid">Get External Content</button>
 {% if request.authenticated_userid %}
 <aside>
   <form action="{{ request.route_url('add') }}" method="POST" class="add_entry">
@@ -17,7 +25,7 @@
   </form>
 </aside>
 {% endif %}
-  <h2>Entries</h2>
+  <h2 id="Entries">Entries</h2>
   {% for entry in entries %}
   <article class="entry" id="entry={{entry.id}}">
     <h3>{{ entry.title }}</h3>
@@ -33,3 +41,4 @@
   </div>
   {% endfor %}
 {% endblock %}
+
