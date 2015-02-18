@@ -5,7 +5,7 @@ $(document).ready(function(){
     $("button#butid").click(function(){
       $.post("/add", {'title' : $("[name=title]").val(), 'text' : $("[name=text]").val()},
         function(data){
-          alert (data['id'])
+          $('div#newentry').prepend("<article class='entry' id='entry="+data['id']+"'><h3>"+data['title']+"</h3><p>dateline</p><div class='entry_body'>"+data['text']+"</div><article>")          
         }, "json");
     });
 });
@@ -24,6 +24,7 @@ $(document).ready(function(){
 </aside>
 {% endif %}
   <h2 id="Entries">Entries</h2>
+  <div id="newentry"></div>
   {% for entry in entries %}
   <article class="entry" id="entry={{entry.id}}">
     <h3>{{ entry.title }}</h3>

@@ -126,11 +126,8 @@ def add_entry(request):
     cursor.execute(DB_MOST_RECENT, [])
     keys = ('id', 'title', 'text', 'created')
     entry = dict(zip(keys, cursor.fetchone()))
-    print entry
-    print entry['created']
-    print time.mktime(entry['created'].timetuple())
+    entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
     entry['created'] = time.mktime(entry['created'].timetuple())
-    print entry['created']
     return entry
     # return HTTPFound(request.route_url('home'))
 
