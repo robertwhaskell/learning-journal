@@ -5,7 +5,7 @@ $(document).ready(function(){
     $("button#butid").click(function(){
       $.post("/add", {'title' : $("[name=title]").val(), 'text' : $("[name=text]").val()},
         function(data){
-          alert (data['a'])
+          alert (data['id'])
         }, "json");
     });
 });
