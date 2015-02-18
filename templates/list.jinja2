@@ -5,7 +5,16 @@ $(document).ready(function(){
     $("button#butid").click(function(){
       $.post("/add", {'title' : $("[name=title]").val(), 'text' : $("[name=text]").val()},
         function(data){
-          $('div#newentry').prepend("<article class='entry' id='entry="+data['id']+"'><h3>"+data['title']+"</h3><p>dateline</p><div class='entry_body'>"+data['text']+"</div><article>")          
+          var id = data['id']
+          $('div#newentry').prepend("dfs"+id+"dfsf")
+          $('div#newentry').prepend("\
+            <article class='entry' id='entry="+id+"'>\
+            <h3>"+data['title']+"</h3>\
+            <p>dateline</p>\
+            <div class='entry_body'>"+data['text']+"</div>\
+            <a href='{{ request.route_url('details', id = "+id+")}}' id='"+id+"'><button>Detail View</button></a>\
+            <article>\
+            ")          
         }, "json");
     });
 });
