@@ -1,23 +1,5 @@
 {% extends "base.jinja2" %}
 {% block body %}
-<script>
-$(document).ready(function(){
-    $("button#butid").click(function(){
-      $.post("/add", {'title' : $("[name=title]").val(), 'text' : $("[name=text]").val()},
-        function(data){
-          var id = data['id']
-          $('div#newentry').prepend("\
-            <article class='entry' id='entry="+id+"'>\
-            <h3>"+data['title']+"</h3>\
-            <p>dateline</p>\
-            <div class='entry_body'>"+data['text']+"</div>\
-            <a href='/details/"+id+"' id='"+id+"'><button>Detail View</button></a>\
-            <article>\
-            ")          
-        }, "json");
-    });
-});
-</script>
 {% if request.authenticated_userid %}
 <aside>
     <div class="field">
@@ -47,5 +29,6 @@ $(document).ready(function(){
     <p><em>No entries here so far</em></p>
   </div>
   {% endfor %}
+  <script src="static/homejs.js"></script>
 {% endblock %}
 
