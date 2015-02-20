@@ -201,7 +201,6 @@ def editor(request):
         entry = {'entries': get_entry(request)}
         if request.method == 'POST':
             update(request, request.matchdict.get('id', -1))
-            return HTTPFound(request.route_url('home'))
         return entry
     else:
         raise HTTPUnauthorized
