@@ -16,9 +16,11 @@ from cryptacular.bcrypt import BCRYPTPasswordManager
 from pyramid.security import remember, forget
 import markdown
 import jinja2
-here = os.path.dirname(os.path.abspath(__file__))
 import json
 import time
+
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 DB_SCHEMA = """
 CREATE TABLE IF NOT EXISTS entries (
