@@ -14,7 +14,7 @@ function append_entry(data){
       $('div#newentry').prepend("\
         <article class='entry' id='entry="+id+"'>\
         <h3>"+data['title']+"</h3>\
-        <p>dateline</p>\
+        <p>"+data['created']+"</p>\
         <div class='entry_body'>"+data['text']+"</div>\
         <a href='/details/"+id+"' id='"+id+"'><button>Detail View</button></a>\
         <article>\

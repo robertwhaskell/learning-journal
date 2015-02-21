@@ -18,6 +18,7 @@ import markdown
 import jinja2
 import json
 import time
+import tweepy
 
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -131,7 +132,7 @@ def add_entry(request):
             keys = ('id', 'title', 'text', 'created')
             entry = dict(zip(keys, cursor.fetchone()))
             entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
-            entry['created'] = time.mktime(entry['created'].timetuple())
+            entry['created'] = entry['created'].strftime('%b. %d, %Y')
             return entry
     # return HTTPFound(request.route_url('home'))
 
@@ -220,6 +221,22 @@ def details(request):
     return {'entries': entry}
 
 
+@view_config(route_name='tweet', renderer='json')
+def tweet_all_about_it(request):
+
+    consumer_key = 'wg0IdOvNPO6SwKNaTz7MWI9J8'
+    consumer_secret = 'OE71lxs2PqOC3hBlIwK85l6npHGsuCmwX0WScAriA4JWFqiVAe'
+    access_token = '3008504700-7ZJGjPtwOZDwEsLHBh4oyoJQdswqmLSyj1QLJI3'
+    access_token_secret = 'UNCrF1nZkurJPpT1ZSACUrGJvwFPxMH4On79Clr611OOa'
+
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+
+    api = tweepy.API(auth)
+
+    api.update_status(status=request.params['title'])
+
+
 def main():
     """Create a configured wsgi app"""
     settings = {}
@@ -247,7 +264,7 @@ def main():
         ),
         authorization_policy=ACLAuthorizationPolicy(),
 
-    )
+    )   
     jinja2.filters.FILTERS['markdown'] = markd
     config.include('pyramid_jinja2')
     config.add_static_view('static', os.path.join(here, 'static'))
@@ -258,6 +275,7 @@ def main():
     config.add_route('details', '/details/{id}')
     config.add_route('editor', '/editor/{id}')
     config.add_route('delete', '/delete/{id}')
+    config.add_route('tweet', '/tweet')
     config.scan()
     app = config.make_wsgi_app()
     return app
