@@ -243,7 +243,7 @@ def get_entry(request):
 @view_config(route_name='editor', renderer="templates/editor.jinja2")
 def editor(request):
     if request.authenticated_userid:
-        entry = {'entries': get_entry(request)}
+        entry = {'entries': [Entry.by_id(request.matchdict.get('id', -1))]}
         if request.method == 'POST':
             update(request, request.matchdict.get('id', -1))
         return entry
@@ -260,8 +260,9 @@ def delete(request):
 
 @view_config(route_name='details', renderer="templates/details.jinja2")
 def details(request):
-    entry = get_entry(request)
-    entry[0]['text'] = markdown.markdown(entry[0]['text'], extensions=('codehilite', 'fenced_code'))
+    # entry = get_entry(request)
+    entry = [Entry.by_id(request.matchdict.get('id', -1))]
+    #entry[0]['text'] = markdown.markdown(entry[0]['text'], extensions=('codehilite', 'fenced_code'))
     return {'entries': entry}
 
 
