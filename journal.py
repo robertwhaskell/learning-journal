@@ -245,7 +245,10 @@ def editor(request):
     if request.authenticated_userid:
         entry = {'entries': [Entry.by_id(request.matchdict.get('id', -1))]}
         if request.method == 'POST':
-            update(request, request.matchdict.get('id', -1))
+            edit = entry['entries'][0]
+            edit.title = request.params['title']
+            edit.text = request.params['text']
+            # update(request, request.matchdict.get('id', -1))
         return entry
     else:
         raise HTTPUnauthorized
