@@ -19,9 +19,50 @@ import jinja2
 import json
 import time
 import tweepy
-
+import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import (
+    scoped_session,
+    sessionmaker,
+    )
+from waitress import serve
+from zope.sqlalchemy import ZopeTransactionExtension
 
 here = os.path.dirname(os.path.abspath(__file__))
+
+
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+Base = declarative_base()
+
+
+class Entry(Base):
+    __tablename__ = 'entries'
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    title = sa.Column(sa.Unicode(127), nullable=False)
+    text = sa.Column(sa.UnicodeText, nullable=False)
+    created = sa.Column(
+        sa.DateTime, nullable=False, default=datetime.datetime.utcnow
+    )
+
+    def __repr__(self):
+        return u"{}: {}".format(self.__class__.__name__, self.title)
+
+    @classmethod
+    def all(cls):
+        return DBSession.query(cls).order_by(cls.created.desc()).all()
+
+    @classmethod
+    def by_id(cls, id):
+        return DBSession.query(cls).filter(cls.id == id).one()
+
+    @classmethod
+    def from_request(cls, request):
+        title = request.params.get('title', None)
+        text = request.params.get('text', None)
+        created = datetime.datetime.utcnow()
+        new_entry = cls(title=title, text=text, created=created)
+        DBSession.add(new_entry)
+
 
 DB_SCHEMA = """
 CREATE TABLE IF NOT EXISTS entries (
@@ -37,7 +78,7 @@ SELECT id, title, text, created FROM entries ORDER BY created DESC
 """
 
 DB_MOST_RECENT = """
-SELECT id, title, text, created FROM entries ORDER BY created DESC LIMIT 1
+SELECT id, title, <te></te>xt, created FROM entries ORDER BY created DESC LIMIT 1
 """
 
 DB_FILTER = """
@@ -242,9 +283,15 @@ def main():
     settings = {}
     settings['reload_all'] = os.environ.get('DEBUG', True)
     settings['debug_all'] = os.environ.get('DEBUG', True)
-    settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
-        )
+    # settings['db'] = os.environ.get(
+    #     'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
+    #     )
+    settings['sqlalchemy.url'] = os.environ.get(
+        ### FIX THE DB URL FORMAT, MUST BE rfc1738 URL
+        'DATABASE_URL', 'postgresql://roberthaskell:@localhost:5432/learning_journal'  #'dbname=learning_journal user=cewing'
+    )
+    engine = sa.engine_from_config(settings, 'sqlalchemy.')
+    DBSession.configure(bind=engine)
     settings['auth.username'] = os.environ.get('AUTH_USERNAME', 'admin')
     manager = BCRYPTPasswordManager()
     settings['auth.password'] = os.environ.get(
@@ -264,8 +311,9 @@ def main():
         ),
         authorization_policy=ACLAuthorizationPolicy(),
 
-    )   
+    )
     jinja2.filters.FILTERS['markdown'] = markd
+    config.include('pyramid_tm')
     config.include('pyramid_jinja2')
     config.add_static_view('static', os.path.join(here, 'static'))
     config.add_route('home', '/')
