@@ -41,7 +41,7 @@ class Entry(Base):
     title = sa.Column(sa.Unicode(127), nullable=False)
     text = sa.Column(sa.UnicodeText, nullable=False)
     created = sa.Column(
-        sa.DateTime, nullable=False, default=datetime.datetime.utcnow
+        sa.DateTime, nullable=False, default=datetime.today
     )
 
     def __repr__(self):
@@ -59,96 +59,97 @@ class Entry(Base):
     def from_request(cls, request):
         title = request.params.get('title', None)
         text = request.params.get('text', None)
-        created = datetime.datetime.utcnow()
+        created = datetime.today()
         new_entry = cls(title=title, text=text, created=created)
         DBSession.add(new_entry)
+        return new_entry
 
 
-DB_SCHEMA = """
-CREATE TABLE IF NOT EXISTS entries (
-    id serial PRIMARY KEY,
-    title VARCHAR (127) NOT NULL,
-    text TEXT NOT NULL,
-    created TIMESTAMP NOT NULL
-)
-"""
+# DB_SCHEMA = """
+# CREATE TABLE IF NOT EXISTS entries (
+#     id serial PRIMARY KEY,
+#     title VARCHAR (127) NOT NULL,
+#     text TEXT NOT NULL,
+#     created TIMESTAMP NOT NULL
+# )
+# """
 
-DB_ENTRIES_LIST = """
-SELECT id, title, text, created FROM entries ORDER BY created DESC
-"""
+# DB_ENTRIES_LIST = """
+# SELECT id, title, text, created FROM entries ORDER BY created DESC
+# """
 
-DB_MOST_RECENT = """
-SELECT id, title, <te></te>xt, created FROM entries ORDER BY created DESC LIMIT 1
-"""
+# DB_MOST_RECENT = """
+# SELECT id, title, <te></te>xt, created FROM entries ORDER BY created DESC LIMIT 1
+# """
 
-DB_FILTER = """
-SELECT id, title, text, created FROM entries WHERE id=%s
-"""
+# DB_FILTER = """
+# SELECT id, title, text, created FROM entries WHERE id=%s
+# """
 
-INSERT_ENTRY = """
-INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);
-"""
+# INSERT_ENTRY = """
+# INSERT INTO entries (title, text, created) VALUES(%s, %s, %s);
+# """
 
-UPDATE_ENTRY = """
-UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;
-"""
+# UPDATE_ENTRY = """
+# UPDATE entries SET title=%s, text=%s, created=%s WHERE id=%s;
+# """
 
-DELETE_ENTRY = """
-DELETE FROM entries WHERE id=%s;
-"""
+# DELETE_ENTRY = """
+# DELETE FROM entries WHERE id=%s;
+# """
 
-logging.basicConfig()
-log = logging.getLogger(__file__)
-
-
-def connect_db(settings):
-    """Return a connection to the configured database"""
-    return psycopg2.connect(settings['db'])
+# logging.basicConfig()
+# log = logging.getLogger(__file__)
 
 
-def init_db():
-    """Create database tables defined by DB_SCHEMA
-    """
-    settings = {}
-    settings['db'] = os.environ.get(
-        'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
-    )
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute(DB_SCHEMA)
-        db.commit()
+# # def connect_db(settings):
+# #     """Return a connection to the configured database"""
+# #     return psycopg2.connect(settings['db'])
 
 
-@subscriber(NewRequest)
-def open_connection(event):
-    request = event.request
-    settings = request.registry.settings
-    request.db = connect_db(settings)
-    request.add_finished_callback(close_connection)
+# # def init_db():
+# #     """Create database tables defined by DB_SCHEMA
+#     """
+#     settings = {}
+#     settings['db'] = os.environ.get(
+#         'DATABASE_URL', 'dbname=learning_journal user=roberthaskell'
+#     )
+#     with closing(connect_db(settings)) as db:
+#         db.cursor().execute(DB_SCHEMA)
+#         db.commit()
 
 
-def close_connection(request):
-    """close the database connection for this request
-
-    If there has been an error in the processing of the request, abort any
-    open transactions.
-    """
-    db = getattr(request, 'db', None)
-    if db is not None:
-        if request.exception is not None:
-            db.rollback()
-        else:
-            db.commit()
-        request.db.close()
+# @subscriber(NewRequest)
+# def open_connection(event):
+#     request = event.request
+#     settings = request.registry.settings
+#     request.db = connect_db(settings)
+#     request.add_finished_callback(close_connection)
 
 
-def write_entry(request):
-    """write a single entry to the database"""
-    title = request.params['title']
-    text = request.params['text']
-    created = datetime.today()
-    request.db.cursor().execute(INSERT_ENTRY, (title, text, created))
-    # write to a separate file
-    return {}
+# def close_connection(request):
+#     """close the database connection for this request
+
+#     If there has been an error in the processing of the request, abort any
+#     open transactions.
+#     """
+#     db = getattr(request, 'db', None)
+#     if db is not None:
+#         if request.exception is not None:
+#             db.rollback()
+#         else:
+#             db.commit()
+#         request.db.close()
+
+
+# def write_entry(request):
+#     """write a single entry to the database"""
+#     title = request.params['title']
+#     text = request.params['text']
+#     created = datetime.today()
+#     request.db.cursor().execute(INSERT_ENTRY, (title, text, created))
+#     # write to a separate file
+#     return {}
 
 
 def update(request, identification):
@@ -163,17 +164,25 @@ def update(request, identification):
 def add_entry(request):
     if request.authenticated_userid:
         if request.method == 'POST':
+            new = None
             try:
-                write_entry(request)
+                new = Entry.from_request(request)
             except psycopg2.Error:
                 # this will catch any errors generated by the database
                 return HTTPInternalServerError
-            cursor = request.db.cursor()
-            cursor.execute(DB_MOST_RECENT, [])
-            keys = ('id', 'title', 'text', 'created')
-            entry = dict(zip(keys, cursor.fetchone()))
-            entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
-            entry['created'] = entry['created'].strftime('%b. %d, %Y')
+            # cursor = request.db.cursor()
+            # cursor.execute(DB_MOST_RECENT, [])
+            # keys = ('id', 'title', 'text', 'created')
+            # entry = dict(zip(keys, cursor.fetchone()))
+            entry = {
+                'id': new.id,
+                'title': new.title,
+                'text': new.text,
+                'created': new.created.strftime('%b. %d, %Y')
+                }
+            print entry
+            # entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
+            # entry['created'] = entry['created'].strftime('%b. %d, %Y')
             return entry
     # return HTTPFound(request.route_url('home'))
 
@@ -181,13 +190,7 @@ def add_entry(request):
 @view_config(route_name='home', renderer='templates/list.jinja2')
 def read_entries(request):
     """return a list of all entries as dicts"""
-    print datetime.today()
-    cursor = request.db.cursor()
-    cursor.execute(DB_ENTRIES_LIST)
-    keys = ('id', 'title', 'text', 'created')
-    entries = [dict(zip(keys, row)) for row in cursor.fetchall()]
-    for entry in entries:
-        entry['text'] = markdown.markdown(entry['text'], extensions=('codehilite', 'fenced_code'))
+    entries = Entry.all()
     return {'entries': entries}
 
 
