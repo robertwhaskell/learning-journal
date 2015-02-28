@@ -171,7 +171,7 @@ def tweet_all_about_it(request):
         access_token = tk.readline().rstrip()
         access_token_secret = tk.readline().rstrip()
     tk.close()
-    
+
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 

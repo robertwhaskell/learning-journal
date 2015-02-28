@@ -5,76 +5,25 @@ from pyramid import testing
 import pytest
 import datetime
 import os
-from journal import INSERT_ENTRY
-from journal import connect_db
-from journal import DB_SCHEMA
 from journal import Entry
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import (
-    scoped_session,
-    sessionmaker,
-    )
-from zope.sqlalchemy import ZopeTransactionExtension
-
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-Base = declarative_base()
-
-TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
+import transaction
+from journal import DBSession
+TEST_DSN = 'postgresql://roberthaskell:@/test_learning_journal'
 
 
-def init_db(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute(DB_SCHEMA)
-        db.commit()
-
-
-def clear_db(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute("DROP TABLE entries")
-        db.commit()
-
-
-def clear_entries(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute("DELETE FROM entries")
-        db.commit()
-
-
-def run_query(db, query, params=(), get_results=True):
-    cursor = db.cursor()
-    cursor.execute(query, params)
-    db.commit()
-    results = None
-    if get_results:
-        results = cursor.fetchall()
-    return results
+def clear_entries():
+    entries = Entry.all()
+    for entry in entries:
+        Entry.delete_by_id(entry.id)
 
 
 @pytest.fixture(scope='session')
 def db(request):
     """set up and tear down a database"""
-    settings = {'db': TEST_DSN}
-    init_db(settings)
-
     def cleanup():
-        clear_db(settings)
+        clear_entries()
 
     request.addfinalizer(cleanup)
-
-    return settings
-
-
-@pytest.yield_fixture(scope='function')
-def req_context(db, request):
-    """mock a request with a database attached"""
-    settings = db
-    req = testing.DummyRequest()
-    with closing(connect_db(settings)) as db:
-        req.db = db
-        req.exception = None
-        yield req
-        # after a test has run, we clear out entries for isolation
-        clear_entries(settings)
 
 
 @pytest.fixture(scope='function')
@@ -87,77 +36,65 @@ def app(db):
 
 
 @pytest.fixture(scope='function')
-def entry(db, request):
+def entry(request, req_context):
     """provide a single entry in the database"""
-    settings = db
-    now = datetime.datetime.utcnow()
-    expected = ('Test Title', 'Test Text', now)
-    with closing(connect_db(settings)) as db:
-        run_query(db, INSERT_ENTRY, expected, False)
-        db.commit()
-
-    def cleanup():
-        clear_entries(settings)
-
-    request.addfinalizer(cleanup)
-
-    return expected
+    req_context.params['title'] = 'Test Title'
+    req_context.params['text'] = 'Test Text'
+    Entry.from_request(req_context)
 
 
 def test_listing(app, entry):
     response = app.get('/')
     assert response.status_code == 200
     actual = response.body
-    for expected in entry[:2]:
-        assert expected in actual
+    assert 'Test Title' in actual
 
 
-def test_write_entry(req_context):
-    from journal import write_entry
-    fields = ('title', 'text')
-    expected = ('Test Title', 'Test Text')
-    req_context.params = dict(zip(fields, expected))
+@pytest.yield_fixture(scope='function')
+def req_context(request):
+    """mock a request with a database attached"""
+    req = testing.DummyRequest()
+    req.exception = None
+    yield req
 
+
+def test_add_entry(req_context):
     # assert that there are no entries when we start
-    rows = run_query(req_context.db, "SELECT * FROM entries")
-    assert len(rows) == 0
+    clear_entries()
+    req_context.params['title'] = 'Test Title'
+    req_context.params['text'] = 'Test Text'
 
-    result = write_entry(req_context)
-    # manually commit so we can see the entry on query
-    req_context.db.commit()
-
-    rows = run_query(req_context.db, "SELECT title, text FROM entries")
+    Entry.from_request(req_context)
+    rows = Entry.all()
     assert len(rows) == 1
-    actual = rows[0]
-    for idx, val in enumerate(expected):
-        assert val == actual[idx]
+    for row in rows:
+        assert row.text == 'Test Text'
+        assert row.title == 'Test Title'
 
 
-def test_read_entries_empty(req_context):
-    # call the function under test
-    from journal import read_entries
-    result = read_entries(req_context)
-    # make assertions about the result
-    assert 'entries' in result
-    assert len(result['entries']) == 0
+# def test_read_entries_empty(req_context):
+#     # call the function under test
+#     clear_entries()
+#     from journal import read_entries
+#     result = read_entries(req_context)
+#     # make assertions about the result
+#     assert 'entries' in result
+#     assert len(result['entries']) == 0
 
 
-def test_read_entries(req_context):
-    # prepare data for testing
-    now = datetime.datetime.utcnow()
-    expected = ('Test Title', 'Test Text', now)
-    run_query(req_context.db, INSERT_ENTRY, expected, False)
-    # call the function under test
-    from journal import read_entries
-    result = read_entries(req_context)
-    # make assertions about the result
-    assert 'entries' in result
-    assert len(result['entries']) == 1
-    for entry in result['entries']:
-        assert expected[0] == entry['title']
-        assert expected[1] == entry['text']
-        for key in 'id', 'created':
-            assert key in entry
+# def test_read_entries(req_context):
+#     # prepare data for testing
+#     req_context.params['title'] = 'Test Title'
+#     req_context.params['text'] = 'Test Text'
+#     Entry.from_request(req_context)
+#     from journal import read_entries
+#     result = read_entries(req_context)
+#     # make assertions about the result
+#     assert 'entries' in result
+#     assert len(result['entries']) == 1
+#     for entry in result['entries']:
+#         assert entry.title == 'Test Title'
+#         assert entry.text == 'Test Text'
 
 
 def test_empty_listing(app):
@@ -168,18 +105,13 @@ def test_empty_listing(app):
     assert expected in actual
 
 
-def test_post_to_add_view(app):
-    entry_data = {
-        'title': 'Hello there',
-        'text': 'This is a post',
-    }
-    response = app.post('/add', params=entry_data, status='3*')
-    redirected = response.follow()
-    actual = redirected.body
-    for expected in entry_data.values():
-        assert expected in actual
-
-
-
-
-INPUT_BTN = '<input type="submit" value="Share" name="Share"/>'
+# def test_post_to_add_view(app):
+#     entry_data = {
+#         'title': 'Hello there',
+#         'text': 'This is a post',
+#     }
+#     response = app.post('/add', params=entry_data, status='3*')
+#     redirected = response.follow()
+#     actual = redirected.body
+#     for expected in entry_data.values():
+#         assert expected in actual
