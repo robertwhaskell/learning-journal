@@ -8,8 +8,16 @@ import os
 from journal import INSERT_ENTRY
 from journal import connect_db
 from journal import DB_SCHEMA
-from cryptacular.bcrypt import BCRYPTPasswordManager
+from journal import Entry
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import (
+    scoped_session,
+    sessionmaker,
+    )
+from zope.sqlalchemy import ZopeTransactionExtension
 
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+Base = declarative_base()
 
 TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
 
