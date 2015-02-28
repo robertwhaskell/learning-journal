@@ -165,11 +165,13 @@ def details(request):
 @view_config(route_name='tweet', renderer='json')
 def tweet_all_about_it(request):
 
-    consumer_key = 'wg0IdOvNPO6SwKNaTz7MWI9J8'
-    consumer_secret = 'OE71lxs2PqOC3hBlIwK85l6npHGsuCmwX0WScAriA4JWFqiVAe'
-    access_token = '3008504700-7ZJGjPtwOZDwEsLHBh4oyoJQdswqmLSyj1QLJI3'
-    access_token_secret = 'UNCrF1nZkurJPpT1ZSACUrGJvwFPxMH4On79Clr611OOa'
-
+    with open('twitterkeys.txt', 'r') as tk:
+        consumer_key = tk.readline().rstrip()
+        consumer_secret = tk.readline().rstrip()
+        access_token = tk.readline().rstrip()
+        access_token_secret = tk.readline().rstrip()
+    tk.close()
+    
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 
