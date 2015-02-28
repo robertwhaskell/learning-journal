@@ -19,7 +19,7 @@ def clear_entries():
 
 @pytest.fixture(scope='session')
 def db(request):
-    """set up and tear down a database"""
+    """tear down db"""
     def cleanup():
         clear_entries()
 
