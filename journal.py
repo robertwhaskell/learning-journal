@@ -71,6 +71,10 @@ class Entry(Base):
         DBSession.add(new_entry)
         return new_entry
 
+    @classmethod
+    def delete_all(cls, session=None):
+        if session is None:
+            session = DBSession
 
 @view_config(route_name='add', request_method='POST', renderer="json")
 def add_entry(request):
