@@ -1,25 +1,46 @@
 # -*- coding: utf-8 -*-
 from contextlib import closing
-import datetime
+from datetime import datetime
 import os
-from journal import INSERT_ENTRY
-from journal import connect_db
-from journal import DB_SCHEMA
 from lettuce import world
 from lettuce import step
 from lettuce import before
 from lettuce import after
 import markdown
+from journal import Entry
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import *
+from pyramid import testing
+import transaction
 
-TEST_DSN = 'dbname=test_learning_journal user=roberthaskell'
+TEST_DSN = 'postgresql://roberthaskell:@/test_learning_journal'
 
 
 @before.all
 def db():
-    """set up a database"""
-    settings = {'db': TEST_DSN}
-    init_db(settings)
-    world.settings = settings
+    engine = create_engine(TEST_DSN)
+    Session = sessionmaker(bind=engine)
+
+    # def cleanup():
+    #     clear_entries(Session)
+
+    # request.addfinalizer(cleanup)
+
+    world.session = Session()
+    meta = MetaData()
+    entries = Table(
+    'entries', meta,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('title', Unicode(127), nullable=False),
+    Column('text', UnicodeText, nullable=False,),
+    Column(
+        'created', DateTime, nullable=False, default=datetime.today)
+    )
+    world.db = entries
+    entries.create(engine, checkfirst=True)    # """set up a database"""
+    # settings = {'db': TEST_DSN}
+    # init_db(settings)
+    # world.settings = settings
 
 
 @before.all
@@ -38,6 +59,23 @@ def enter_data(step):
     entry('Test Title', 'Test Text')
     entry('Unedited Title', 'Unedited Text')
     entry('Delete Title', 'Delete Text')
+    transaction.commit()
+
+def entry(title, text):
+    # """provide a single entry in the database"""
+    # settings = world.settings
+    # now = datetime.datetime.utcnow()
+    # expected = (title, text, now)
+    # with closing(connect_db(settings)) as db:
+    #     run_query(db, INSERT_ENTRY, expected, False)
+    #     db.commit()
+    # world.expected = expected
+
+    req = testing.DummyRequest()
+    req.exception = None
+    req.params['title'] = title
+    req.params['text'] = text
+    Entry.from_request(req)
 
 
 @before.each_feature
@@ -55,50 +93,47 @@ def logout(*args):
     world.app.get('/').click(linkid='logout')
 
 
-@after.all
-def clear_entries(settings):
-    """clear the database"""
-    with closing(connect_db(world.settings)) as db:
-        db.cursor().execute("DELETE FROM entries")
-        db.commit()
+@after.each_feature
+def clear_entries(db):
+    for entry in Entry.all():
+        Entry.delete_by_id(entry.id)
+    Entry.delete_all(session=db)
+    transaction.commit()
 
 
 @after.all
-def cleanup(step):
-    clear_db(world.settings)
+def drop_table():
+    world.db.drop(engine, checkfirst=True)
+
+# @after.all
+# def cleanup(step):
+#     clear_db(world.settings)
 
 
-def init_db(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute(DB_SCHEMA)
-        db.commit()
+# def init_db(settings):
+#     with closing(connect_db(settings)) as db:
+#         db.cursor().execute(DB_SCHEMA)
+#         db.commit()
 
 
-def clear_db(settings):
-    with closing(connect_db(settings)) as db:
-        db.cursor().execute("DROP TABLE entries")
-        db.commit()
+# def clear_db(settings):
+#     with closing(connect_db(settings)) as db:
+#         db.cursor().execute("DROP TABLE entries")
+#         db.commit()
 
 
-def run_query(db, query, params=(), get_results=True):
-    cursor = db.cursor()
-    cursor.execute(query, params)
-    db.commit()
-    results = None
-    if get_results:
-        results = cursor.fetchall()
-    return results
+# def run_query(db, query, params=(), get_results=True):
+#     cursor = db.cursor()
+#     cursor.execute(query, params)
+#     db.commit()
+#     results = None
+#     if get_results:
+#         results = cursor.fetchall()
+#     return results
 
 
-def entry(title, text):
-    """provide a single entry in the database"""
-    settings = world.settings
-    now = datetime.datetime.utcnow()
-    expected = (title, text, now)
-    with closing(connect_db(settings)) as db:
-        run_query(db, INSERT_ENTRY, expected, False)
-        db.commit()
-    world.expected = expected
+
+
 
 
 def mkdn(text):
@@ -124,7 +159,8 @@ def confirm_markdown(step, is_or_isnt):
 @step('Go to the home page')
 def Go_to_home_page(step):
     world.homepage = world.app.get('/')
-    assert '<h2>Entries</h2>' in world.homepage
+    print world.homepage
+    assert '<h2 id="Entries">Entries</h2>' in world.homepage
 
 
 @step('Click the detail button of an entry')

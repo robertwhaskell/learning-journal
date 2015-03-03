@@ -1,18 +1,15 @@
 
 # -*- coding: utf-8 -*-
-from contextlib import closing
 from pyramid import testing
 import pytest
-import datetime
 import os
 from journal import Entry
 import transaction
-from journal import DBSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy import *
 import markdown
 from cryptacular.bcrypt import BCRYPTPasswordManager
-from pyramid.httpexceptions import HTTPUnauthorized
+from datetime import datetime
 
 TEST_DSN = 'postgresql://roberthaskell:@/test_learning_journal'
 
@@ -31,32 +28,24 @@ def clear_entries(db):
     Entry.delete_all(session=db)
 
 
-@pytest.fixture(scope='function')
-def auth_req(request):
-    manager = BCRYPTPasswordManager()
-    settings = {
-        'auth.username': 'admin',
-        'auth.password': manager.encode('secret'),
-    }
-    testing.setUp(settings=settings)
-    req = testing.DummyRequest()
-
-    def cleanup():
-        testing.tearDown()
-
-    request.addfinalizer(cleanup)
-
-    return req
-
-
 @pytest.fixture(scope='session')
 def db(request):
     """tear down db"""
-    engine = create_engine('postgresql://roberthaskell:@/test_learning_journal')
+    engine = create_engine(TEST_DSN)
     Session = sessionmaker(bind=engine)
+    meta = MetaData()
+    entries = Table(
+    'entries', meta,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('title', Unicode(127), nullable=False),
+    Column('text', UnicodeText, nullable=False,),
+    Column(
+        'created', DateTime, nullable=False, default=datetime.today)
+    )
+    entries.create(engine, checkfirst=True)
 
     def cleanup():
-        clear_entries(Session)
+        entries.drop(engine, checkfirst=True)
 
     request.addfinalizer(cleanup)
 
