@@ -42,20 +42,28 @@ class Entry(Base):
         return u"{}: {}".format(self.__class__.__name__, self.title)
 
     @classmethod
-    def all(cls):
-        return DBSession.query(cls).order_by(cls.created.desc()).all()
+    def all(cls, session=None):
+        if session is None:
+            session = DBSession
+        return session.query(cls).order_by(cls.created.desc()).all()
 
     @classmethod
-    def by_id(cls, id):
+    def by_id(cls, id, session=None):
+        if session is None:
+            session = DBSession
         return DBSession.query(cls).filter(cls.id == id).one()
 
     @classmethod
-    def delete_by_id(cls, id):
+    def delete_by_id(cls, id, session=None):
+        if session is None:
+            session = DBSession
         entry = DBSession.query(cls).filter(cls.id == id).one()
         DBSession.delete(entry)
 
     @classmethod
-    def from_request(cls, request):
+    def from_request(cls, request, session=None):
+        if session is None:
+            session = DBSession
         title = request.params.get('title', None)
         text = request.params.get('text', None)
         created = datetime.today()

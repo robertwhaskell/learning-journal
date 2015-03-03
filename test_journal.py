@@ -8,22 +8,31 @@ import os
 from journal import Entry
 import transaction
 from journal import DBSession
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
 TEST_DSN = 'postgresql://roberthaskell:@/test_learning_journal'
 
 
-def clear_entries():
-    entries = Entry.all()
-    for entry in entries:
-        Entry.delete_by_id(entry.id)
+# def clear_entries(session):
+#     entries = Entry.all()
+#     for entry in entries:
+#         Entry.delete_by_id(entry.id, session)
+#         transaction.commit()
 
 
 @pytest.fixture(scope='session')
 def db(request):
     """tear down db"""
+    engine = create_engine('postgresql://roberthaskell:@/test_learning_journal')
+    Session = sessionmaker(bind=engine)
+
     def cleanup():
-        clear_entries()
+        pass
 
     request.addfinalizer(cleanup)
+
+    return Session()
 
 
 @pytest.fixture(scope='function')
@@ -36,11 +45,11 @@ def app(db):
 
 
 @pytest.fixture(scope='function')
-def entry(request, req_context):
+def entry(request, req_context, db):
     """provide a single entry in the database"""
     req_context.params['title'] = 'Test Title'
     req_context.params['text'] = 'Test Text'
-    Entry.from_request(req_context)
+    Entry.from_request(request=req_context, session=db)
 
 
 def test_listing(app, entry):
@@ -58,43 +67,43 @@ def req_context(request):
     yield req
 
 
-def test_add_entry(req_context):
-    # assert that there are no entries when we start
-    clear_entries()
-    req_context.params['title'] = 'Test Title'
-    req_context.params['text'] = 'Test Text'
-
-    Entry.from_request(req_context)
-    rows = Entry.all()
-    assert len(rows) == 1
-    for row in rows:
-        assert row.text == 'Test Text'
-        assert row.title == 'Test Title'
-
-
-# def test_read_entries_empty(req_context):
-#     # call the function under test
-#     clear_entries()
-#     from journal import read_entries
-#     result = read_entries(req_context)
-#     # make assertions about the result
-#     assert 'entries' in result
-#     assert len(result['entries']) == 0
-
-
-# def test_read_entries(req_context):
-#     # prepare data for testing
+# def test_add_entry(req_context, db):
+#     # assert that there are no entries when we start
+#     clear_entries(db)
 #     req_context.params['title'] = 'Test Title'
 #     req_context.params['text'] = 'Test Text'
+
 #     Entry.from_request(req_context)
-#     from journal import read_entries
-#     result = read_entries(req_context)
-#     # make assertions about the result
-#     assert 'entries' in result
-#     assert len(result['entries']) == 1
-#     for entry in result['entries']:
-#         assert entry.title == 'Test Title'
-#         assert entry.text == 'Test Text'
+#     rows = Entry.all()
+#     assert len(rows) == 1
+#     for row in rows:
+#         assert row.text == 'Test Text'
+#         assert row.title == 'Test Title'
+
+
+# # def test_read_entries_empty(req_context):
+# #     # call the function under test
+# #     clear_entries()
+# #     from journal import read_entries
+# #     result = read_entries(req_context)
+# #     # make assertions about the result
+# #     assert 'entries' in result
+# #     assert len(result['entries']) == 0
+
+
+# # def test_read_entries(req_context):
+# #     # prepare data for testing
+# #     req_context.params['title'] = 'Test Title'
+# #     req_context.params['text'] = 'Test Text'
+# #     Entry.from_request(req_context)
+# #     from journal import read_entries
+# #     result = read_entries(req_context)
+# #     # make assertions about the result
+# #     assert 'entries' in result
+# #     assert len(result['entries']) == 1
+# #     for entry in result['entries']:
+# #         assert entry.title == 'Test Title'
+# #         assert entry.text == 'Test Text'
 
 
 def test_empty_listing(app):
