@@ -8,5 +8,3 @@ Feature: Markdown/Colorization Features
     Examples:
         | pagename   | text     | is_or_isnt
         | /          | Test Text | is
-        | /details/1 | Test Text | is
-        | /editor/1    | Test Text | isnt

@@ -20,12 +20,7 @@ TEST_DSN = 'postgresql://roberthaskell:@/test_learning_journal'
 def db():
     engine = create_engine(TEST_DSN)
     Session = sessionmaker(bind=engine)
-
-    # def cleanup():
-    #     clear_entries(Session)
-
-    # request.addfinalizer(cleanup)
-
+    world.engine = engine
     world.session = Session()
     meta = MetaData()
     entries = Table(
@@ -37,10 +32,7 @@ def db():
         'created', DateTime, nullable=False, default=datetime.today)
     )
     world.db = entries
-    entries.create(engine, checkfirst=True)    # """set up a database"""
-    # settings = {'db': TEST_DSN}
-    # init_db(settings)
-    # world.settings = settings
+    entries.create(engine, checkfirst=True)
 
 
 @before.all
@@ -61,16 +53,8 @@ def enter_data(step):
     entry('Delete Title', 'Delete Text')
     transaction.commit()
 
-def entry(title, text):
-    # """provide a single entry in the database"""
-    # settings = world.settings
-    # now = datetime.datetime.utcnow()
-    # expected = (title, text, now)
-    # with closing(connect_db(settings)) as db:
-    #     run_query(db, INSERT_ENTRY, expected, False)
-    #     db.commit()
-    # world.expected = expected
 
+def entry(title, text):
     req = testing.DummyRequest()
     req.exception = None
     req.params['title'] = title
@@ -102,45 +86,14 @@ def clear_entries(db):
 
 
 @after.all
-def drop_table():
-    world.db.drop(engine, checkfirst=True)
-
-# @after.all
-# def cleanup(step):
-#     clear_db(world.settings)
-
-
-# def init_db(settings):
-#     with closing(connect_db(settings)) as db:
-#         db.cursor().execute(DB_SCHEMA)
-#         db.commit()
-
-
-# def clear_db(settings):
-#     with closing(connect_db(settings)) as db:
-#         db.cursor().execute("DROP TABLE entries")
-#         db.commit()
-
-
-# def run_query(db, query, params=(), get_results=True):
-#     cursor = db.cursor()
-#     cursor.execute(query, params)
-#     db.commit()
-#     results = None
-#     if get_results:
-#         results = cursor.fetchall()
-#     return results
-
-
-
-
+def drop_table(request):
+    world.db.drop(world.engine, checkfirst=True)
 
 
 def mkdn(text):
     return markdown.markdown(text, extensions=('codehilite', 'fenced_code'))
 
 
-# Steps:
 @step('I see an entry on the "(.*)" page with the text "(.*)"')
 def confirm_title_on_homepage(step, page, text):
     world.page = page
@@ -159,7 +112,6 @@ def confirm_markdown(step, is_or_isnt):
 @step('Go to the home page')
 def Go_to_home_page(step):
     world.homepage = world.app.get('/')
-    print world.homepage
     assert '<h2 id="Entries">Entries</h2>' in world.homepage
 
 
@@ -187,7 +139,6 @@ def edit_entry(step):
     f = world.editpage.form
     f['title'] = 'Edited Title'
     f['text'] = 'Edited Text'
-    f.submit('submit')
 
 
 @step('Then I see the change on the home page')
